@@ -770,6 +770,29 @@ class BitmapData implements IBitmapDrawable
 	}
 
 	/**
+		Uploads this bitmap to the GPU and frees its software image buffer.
+		After this the bitmap is hardware-only (`readable` is `false`).
+
+		@param	context	The Context3D to upload to, defaults to the stage's.
+		@since CodenameCrew's OpenFL
+	**/
+	public function toHardware(?context:Context3D):Void
+	{
+		#if !flash
+		if (image == null) return;
+
+		if (context == null)
+		{
+			if (Lib.current.stage == null || Lib.current.stage.context3D == null) return;
+			context = Lib.current.stage.context3D;
+		}
+
+		disposeImage();
+		getTexture(context);
+		#end
+	}
+
+	/**
 		Draws the `source` display object onto the bitmap image. If the bitmap
 		image is readable, the OpenFL software renderer is used; otherwise,
 		the hardware renderer is used. You can specify `matrix`,
