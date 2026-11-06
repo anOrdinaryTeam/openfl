@@ -251,11 +251,15 @@ class Context3DGraphics
 						bitmap = null;
 						bitmapMatrix = null;
 
-						if (shaderBuffer != null)
+						// the shader's bitmap input, or the value the buffer overrides it with
+						if (shaderBuffer != null && shaderBuffer.shader != null && shaderBuffer.shader.__bitmap != null)
 						{
+							var shader = shaderBuffer.shader;
+							bitmap = shader.__bitmap.input;
+
 							for (i in 0...shaderBuffer.inputCount)
 							{
-								if (shaderBuffer.inputRefs[i].name == "bitmap")
+								if (shaderBuffer.inputRefs[i] == shader.__bitmap)
 								{
 									bitmap = shaderBuffer.inputs[i];
 									break;
@@ -653,6 +657,10 @@ class Context3DGraphics
 			return true;
 		}
 
+		// for each fill, allow drawing one shape only because the two shapes
+		// might intersect and require a cutout. fall back to software for that.
+		var hasDrawnFilledShape = false;
+
 		for (type in graphics.__commands.types)
 		{
 			switch (type)
@@ -671,6 +679,7 @@ class Context3DGraphics
 					hasBitmapFill = true;
 					hasColorFill = false;
 					hasShaderFill = false;
+					hasDrawnFilledShape = false;
 
 				case BEGIN_FILL:
 					if (!flushLinePathCompatibility())
@@ -680,6 +689,7 @@ class Context3DGraphics
 					hasBitmapFill = false;
 					hasColorFill = true;
 					hasShaderFill = false;
+					hasDrawnFilledShape = false;
 					data.skip(type);
 
 				case BEGIN_SHADER_FILL:
@@ -690,6 +700,7 @@ class Context3DGraphics
 					hasBitmapFill = false;
 					hasColorFill = false;
 					hasShaderFill = true;
+					hasDrawnFilledShape = false;
 
 				case LINE_STYLE:
 					var c = data.readLineStyle();
@@ -705,8 +716,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -720,8 +732,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -735,8 +748,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -750,8 +764,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -765,8 +780,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -780,8 +796,9 @@ class Context3DGraphics
 					{
 						return false;
 					}
-					if (hasColorFill || hasBitmapFill || hasShaderFill)
+					if (!hasDrawnFilledShape && (hasColorFill || hasBitmapFill || hasShaderFill))
 					{
+						hasDrawnFilledShape = true;
 						data.skip(type);
 					}
 					else
@@ -832,6 +849,7 @@ class Context3DGraphics
 					hasBitmapFill = false;
 					hasColorFill = false;
 					hasShaderFill = false;
+					hasDrawnFilledShape = false;
 					data.skip(type);
 
 				case OVERRIDE_BLEND_MODE:
@@ -1167,7 +1185,18 @@ class Context3DGraphics
 							}
 							else
 							{
-								bitmap = shaderBuffer.shader.__bitmap.input;
+								// the shader's bitmap input, or the value the buffer overrides it with
+								var shader = shaderBuffer.shader;
+								bitmap = shader.__bitmap.input;
+
+								for (i in 0...shaderBuffer.inputCount)
+								{
+									if (shaderBuffer.inputRefs[i] == shader.__bitmap)
+									{
+										bitmap = shaderBuffer.inputs[i];
+										break;
+									}
+								}
 							}
 
 							fill = null;

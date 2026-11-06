@@ -603,7 +603,7 @@ class Loader extends DisplayObjectContainer
 		// the following work-around
 		if (child == content)
 		{
-			return super.removeChild(content);
+			return __removeChild(content);
 		}
 		else
 		{
@@ -657,7 +657,7 @@ class Loader extends DisplayObjectContainer
 		{
 			if (content != null && content.parent == this)
 			{
-				super.removeChild(content);
+				__removeChild(content);
 			}
 
 			if (__library != null)
@@ -725,9 +725,9 @@ class Loader extends DisplayObjectContainer
 			content.__stopAllMovieClips();
 		}
 
-		for (i in 0...numChildren)
+		for (i in 0...__children.length)
 		{
-			getChildAt(i).__stopAllMovieClips();
+			__children[i].__stopAllMovieClips();
 		}
 
 		unload();
@@ -775,7 +775,7 @@ class Loader extends DisplayObjectContainer
 			contentLoaderInfo.height = Std.int(content.height);
 		}
 
-		super.addChildAt(content, 0);
+		__addChildAt(content, 0);
 
 		#if openfl_pool_events
 		var completeEvent = Event.__pool.get();

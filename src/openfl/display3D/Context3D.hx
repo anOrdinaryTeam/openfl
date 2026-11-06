@@ -333,7 +333,7 @@ import openfl.utils.ByteArray;
 		{
 			if (__context.type == OPENGLES && Std.parseFloat(__context.version) >= 3)
 			{
-				__glDepthStencil = __context.gles3.DEPTH24_STENCIL8;
+				__glDepthStencil = GL.DEPTH24_STENCIL8;
 			}
 			else if (__context.type == OPENGL && Std.parseFloat(__context.version) >= 3)
 			{
@@ -380,6 +380,8 @@ import openfl.utils.ByteArray;
 
 			__driverInfo = "OpenGL Vendor=" + vendor + " Version=" + version + " Renderer=" + renderer + " GLSL=" + glslVersion;
 		}
+
+
 
 		driverInfo = __driverInfo;
 
@@ -443,7 +445,7 @@ import openfl.utils.ByteArray;
 	public function clear(red:Float = 0, green:Float = 0, blue:Float = 0, alpha:Float = 1, depth:Float = 1, stencil:UInt = 0,
 			mask:UInt = Context3DClearMask.ALL):Void
 	{
-		__clear(false, red, green, blue, alpha, depth, stencil, mask);
+		inline __clear(false, red, green, blue, alpha, depth, stencil, mask);
 	}
 
 	@:noCompletion private function __clear(useScissor:Bool, red:Float = 0, green:Float = 0, blue:Float = 0, alpha:Float = 1, depth:Float = 1,
@@ -470,11 +472,12 @@ import openfl.utils.ByteArray;
 				|| __contextState.colorMaskBlue != true
 				|| __contextState.colorMaskAlpha != true #end)
 			{
-				gl.colorMask(true, true, true, true);
-				__contextState.colorMaskRed = true;
-				__contextState.colorMaskGreen = true;
-				__contextState.colorMaskBlue = true;
-				__contextState.colorMaskAlpha = true;
+				gl.colorMask(
+					__contextState.colorMaskRed = true,
+					__contextState.colorMaskGreen = true,
+					__contextState.colorMaskBlue = true,
+					__contextState.colorMaskAlpha = true
+				);
 			}
 
 			gl.clearColor(red, green, blue, alpha);
@@ -486,8 +489,7 @@ import openfl.utils.ByteArray;
 
 			if (#if openfl_disable_context_cache true #else __contextState.depthMask != true #end)
 			{
-				gl.depthMask(true);
-				__contextState.depthMask = true;
+				gl.depthMask(__contextState.depthMask = true);
 			}
 
 			gl.clearDepth(depth);
@@ -499,12 +501,10 @@ import openfl.utils.ByteArray;
 
 			if (#if openfl_disable_context_cache true #else __contextState.stencilWriteMask != 0xFF #end)
 			{
-				gl.stencilMask(0xFF);
-				__contextState.stencilWriteMask = 0xFF;
+				gl.stencilMask(__contextState.stencilWriteMask = 0xFF);
 			}
 
 			gl.clearStencil(stencil);
-			__contextState.stencilWriteMask = 0xFF;
 		}
 
 		if (clearMask == 0) return;
@@ -1090,7 +1090,7 @@ import openfl.utils.ByteArray;
 	{
 		if (destination == null) return;
 
-		var sourceRect = srcRect != null ? srcRect.__toLimeRectangle() : new LimeRectangle(0, 0, backBufferWidth, backBufferHeight);
+		var sourceRect = srcRect != null ? srcRect.__toLimeRectangle() : new lime.math.Rectangle(0, 0, backBufferWidth, backBufferHeight);
 		var destVector = destPoint != null ? destPoint.__toLimeVector2() : new Vector2();
 
 		if (__stage.context3D == this)
@@ -2534,7 +2534,7 @@ import openfl.utils.ByteArray;
 				if (__context.type == OPENGL)
 				{
 					// TODO: Cache?
-					gl.enable(gl.TEXTURE_2D);
+					gl.enable(texture.__textureTarget);
 				}
 
 				__contextState.textures[i] = texture;
@@ -2861,11 +2861,6 @@ import openfl.utils.ByteArray;
 			}
 			__contextState.__enableGLStencilTest = enable;
 		}
-	}
-
-	@:noCompletion private inline function __glBlendBarrier():Void
-	{
-		gl.blendBarrier();
 	}
 
 	// Get & Set Methods

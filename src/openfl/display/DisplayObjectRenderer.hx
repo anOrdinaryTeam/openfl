@@ -467,7 +467,10 @@ class DisplayObjectRenderer extends EventDispatcher
 			var rect:Rectangle = null;
 
 			var needRender = (displayObject.__cacheBitmap == null
-				|| (displayObject.__renderDirty && (force || (displayObject.__children != null && displayObject.__children.length > 0)))
+				|| (displayObject.__renderDirty
+					&& (force
+						|| displayObject.__cacheBitmap != null
+						|| (displayObject.__children != null && displayObject.__children.length > 0)))
 				|| displayObject.opaqueBackground != displayObject.__cacheBitmapBackground);
 			var softwareDirty = needRender
 				|| (displayObject.__graphics != null && displayObject.__graphics.__softwareDirty)
@@ -706,6 +709,10 @@ class DisplayObjectRenderer extends EventDispatcher
 				else
 				{
 					ColorTransform.__pool.release(colorTransform);
+					if (updateTransform || needRender)
+					{
+						Rectangle.__pool.release(rect);
+					}
 					if (desiredCacheBounds != null) Rectangle.__pool.release(desiredCacheBounds);
 
 					displayObject.__cacheBitmap = null;

@@ -144,6 +144,9 @@ class ApplicationMain
 			{
 				ApplicationMain.getEntryPoint();
 
+				stage.loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.INIT));
+				stage.loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.COMPLETE));
+
 				stage.dispatchEvent(new openfl.events.Event(openfl.events.Event.RESIZE, false, false));
 
 				if (stage.window.fullscreen)
@@ -161,6 +164,9 @@ class ApplicationMain
 		else
 		{
 			ApplicationMain.getEntryPoint();
+
+			stage.loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.INIT));
+			stage.loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.COMPLETE));
 
 			stage.dispatchEvent(new openfl.events.Event(openfl.events.Event.RESIZE, false, false));
 

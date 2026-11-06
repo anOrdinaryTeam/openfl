@@ -60,7 +60,12 @@ import openfl.geom.Rectangle;
 @:access(openfl.geom.Rectangle)
 @:final class DropShadowFilter extends BitmapFilter
 {
-	@:noCompletion private static var __hideShader = new HideShader();
+	@:noCompletion private static var __hideShader:HideShader;
+	@:noCompletion private static inline function __getHideShader():HideShader
+	{
+		if (__hideShader == null) __hideShader = new HideShader();
+		return __hideShader;
+	}
 
 	/**
 		The alpha transparency value for the shadow color. Valid values are 0.0 to
@@ -256,7 +261,7 @@ import openfl.geom.Rectangle;
 		// Drop shadow is glow with an offset
 		if (__inner && pass == 0)
 		{
-			return GlowFilter.__invertAlphaShader;
+			return GlowFilter.__getInvertAlphaShader();
 		}
 
 		var blurPass = pass - (__inner ? 1 : 0);
@@ -264,7 +269,7 @@ import openfl.geom.Rectangle;
 
 		if (blurPass < numBlurPasses)
 		{
-			var shader = GlowFilter.__blurAlphaShader;
+			var shader = GlowFilter.__getBlurAlphaShader();
 			if (blurPass < __horizontalPasses)
 			{
 				var scale = Math.pow(0.5, blurPass >> 1) * 0.5;
@@ -289,13 +294,13 @@ import openfl.geom.Rectangle;
 		{
 			if (__knockout || __hideObject)
 			{
-				var shader = GlowFilter.__innerCombineKnockoutShader;
+				var shader = GlowFilter.__getInnerCombineKnockoutShader();
 				shader.sourceBitmap.input = sourceBitmapData;
 				shader.offset.value[0] = __offsetX;
 				shader.offset.value[1] = __offsetY;
 				return shader;
 			}
-			var shader = GlowFilter.__innerCombineShader;
+			var shader = GlowFilter.__getInnerCombineShader();
 			shader.sourceBitmap.input = sourceBitmapData;
 			shader.offset.value[0] = __offsetX;
 			shader.offset.value[1] = __offsetY;
@@ -305,7 +310,7 @@ import openfl.geom.Rectangle;
 		{
 			if (__knockout)
 			{
-				var shader = GlowFilter.__combineKnockoutShader;
+				var shader = GlowFilter.__getCombineKnockoutShader();
 				shader.sourceBitmap.input = sourceBitmapData;
 				shader.offset.value[0] = __offsetX;
 				shader.offset.value[1] = __offsetY;
@@ -313,13 +318,13 @@ import openfl.geom.Rectangle;
 			}
 			else if (__hideObject)
 			{
-				var shader = __hideShader;
+				var shader = __getHideShader();
 				shader.sourceBitmap.input = sourceBitmapData;
 				shader.offset.value[0] = __offsetX;
 				shader.offset.value[1] = __offsetY;
 				return shader;
 			}
-			var shader = GlowFilter.__combineShader;
+			var shader = GlowFilter.__getCombineShader();
 			shader.sourceBitmap.input = sourceBitmapData;
 			shader.offset.value[0] = __offsetX;
 			shader.offset.value[1] = __offsetY;

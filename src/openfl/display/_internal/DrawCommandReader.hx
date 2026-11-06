@@ -10,6 +10,7 @@ import openfl.display.JointStyle;
 import openfl.display.LineScaleMode;
 import openfl.display.SpreadMethod;
 import openfl.display.TriangleCulling;
+import openfl.display3D.Context3DCompareMode;
 import openfl.geom.Matrix;
 
 @:allow(openfl.display._internal)
@@ -17,6 +18,10 @@ import openfl.geom.Matrix;
 @SuppressWarnings("checkstyle:FieldDocComment")
 class DrawCommandReader
 {
+	// openfl's rendering is designed to be on the main thread only, so this
+	// variable won't be accessed by multiple views at the same time
+	private static var __tempMatrix:Matrix = new Matrix();
+
 	public var buffer:DrawCommandBuffer;
 
 	@:noCompletion private var bPos:Int;
@@ -41,18 +46,19 @@ class DrawCommandReader
 		switch (prev)
 		{
 			case BEGIN_BITMAP_FILL:
-				oPos += 2; // bitmap, matrix
+				oPos += 1; // bitmap
 				bPos += 2; // repeat, smooth
+				fPos += 6; // matrix (6 float values)
 
 			case BEGIN_FILL:
 				iPos += 1; // color
 				fPos += 1; // alpha
 
 			case BEGIN_GRADIENT_FILL:
-				oPos += 4; // type, matrix, spreadMethod, interpolationMethod
+				oPos += 3; // type, spreadMethod, interpolationMethod
 				iiPos += 2; // colors, ratios
 				ffPos += 1; // alphas
-				fPos += 1; // focalPointRatio
+				fPos += 7; // matrix (6 float values), focalPointRatio
 
 			case BEGIN_SHADER_FILL:
 				oPos += 1; // shaderBuffer
@@ -86,14 +92,15 @@ class DrawCommandReader
 				// no parameters
 
 			case LINE_BITMAP_STYLE:
-				oPos += 2; // bitmap, matrix
+				oPos += 1; // bitmap
 				bPos += 2; // repeat, smooth
+				fPos += 6; // matrix (6 float values)
 
 			case LINE_GRADIENT_STYLE:
-				oPos += 4; // type, matrix, spreadMethod, interpolationMethod
+				oPos += 3; // type, spreadMethod, interpolationMethod
 				iiPos += 2; // colors, ratios
 				ffPos += 1; // alphas
-				fPos += 1; // focalPointRatio
+				fPos += 7; // matrix (6 float values), focalPointRatio
 
 			case LINE_STYLE:
 				oPos += 4; // thickness, scaleMode, caps, joints
@@ -111,7 +118,11 @@ class DrawCommandReader
 				oPos += 1; // blendMode
 
 			case OVERRIDE_MATRIX:
-				oPos += 1; // matrix
+				fPos += 6; // matrix (6 float values)
+
+			case OVERRIDE_DEPTH_TEST:
+				bPos += 1; // depthTest
+				oPos += 1; // compareMode
 
 			case WINDING_EVEN_ODD, WINDING_NON_ZERO:
 				// no parameters
@@ -310,6 +321,13 @@ class DrawCommandReader
 		return new WindingNonZeroView(this);
 	}
 
+	public inline function readOverrideDepthTest():OverrideDepthTest
+	{
+		advance();
+		prev = OVERRIDE_DEPTH_TEST;
+		return new OverrideDepthTest(this);
+	}
+
 	public function reset():Void
 	{
 		bPos = iPos = fPos = oPos = ffPos = iiPos = tsPos = 0;
@@ -341,7 +359,8 @@ abstract BeginBitmapFillView(DrawCommandReader)
 
 	@:noCompletion private inline function get_matrix():Matrix
 	{
-		return cast this.obj(1);
+		DrawCommandReader.__tempMatrix.setTo(this.float(0), this.float(1), this.float(2), this.float(3), this.float(4), this.float(5));
+		return DrawCommandReader.__tempMatrix;
 	}
 
 	public var repeat(get, never):Bool;
@@ -420,28 +439,29 @@ abstract BeginGradientFillView(DrawCommandReader)
 
 	@:noCompletion private inline function get_matrix():Matrix
 	{
-		return cast this.obj(1);
+		DrawCommandReader.__tempMatrix.setTo(this.float(0), this.float(1), this.float(2), this.float(3), this.float(4), this.float(5));
+		return DrawCommandReader.__tempMatrix;
 	}
 
 	public var spreadMethod(get, never):SpreadMethod;
 
 	@:noCompletion private inline function get_spreadMethod():SpreadMethod
 	{
-		return cast this.obj(2);
+		return cast this.obj(1);
 	}
 
 	public var interpolationMethod(get, never):InterpolationMethod;
 
 	@:noCompletion private inline function get_interpolationMethod():InterpolationMethod
 	{
-		return cast this.obj(3);
+		return cast this.obj(2);
 	}
 
 	public var focalPointRatio(get, never):Float;
 
 	@:noCompletion private inline function get_focalPointRatio():Float
 	{
-		return cast this.float(0);
+		return cast this.float(6);
 	}
 }
 
@@ -788,7 +808,8 @@ abstract LineBitmapStyleView(DrawCommandReader)
 
 	@:noCompletion private inline function get_matrix():Matrix
 	{
-		return cast this.obj(1);
+		DrawCommandReader.__tempMatrix.setTo(this.float(0), this.float(1), this.float(2), this.float(3), this.float(4), this.float(5));
+		return DrawCommandReader.__tempMatrix;
 	}
 
 	public var repeat(get, never):Bool;
@@ -845,28 +866,29 @@ abstract LineGradientStyleView(DrawCommandReader)
 
 	@:noCompletion private inline function get_matrix():Matrix
 	{
-		return cast this.obj(1);
+		DrawCommandReader.__tempMatrix.setTo(this.float(0), this.float(1), this.float(2), this.float(3), this.float(4), this.float(5));
+		return DrawCommandReader.__tempMatrix;
 	}
 
 	public var spreadMethod(get, never):SpreadMethod;
 
 	@:noCompletion private inline function get_spreadMethod():SpreadMethod
 	{
-		return cast this.obj(2);
+		return cast this.obj(1);
 	}
 
 	public var interpolationMethod(get, never):InterpolationMethod;
 
 	@:noCompletion private inline function get_interpolationMethod():InterpolationMethod
 	{
-		return cast this.obj(3);
+		return cast this.obj(2);
 	}
 
 	public var focalPointRatio(get, never):Float;
 
 	@:noCompletion private inline function get_focalPointRatio():Float
 	{
-		return cast this.float(0);
+		return cast this.float(6);
 	}
 }
 
@@ -1004,7 +1026,8 @@ abstract OverrideMatrixView(DrawCommandReader)
 
 	@:noCompletion private inline function get_matrix():Matrix
 	{
-		return cast this.obj(0);
+		DrawCommandReader.__tempMatrix.setTo(this.float(0), this.float(1), this.float(2), this.float(3), this.float(4), this.float(5));
+		return DrawCommandReader.__tempMatrix;
 	}
 }
 
@@ -1021,5 +1044,27 @@ abstract WindingNonZeroView(DrawCommandReader)
 	public inline function new(d:DrawCommandReader)
 	{
 		this = d;
+	}
+}
+
+abstract OverrideDepthTest(DrawCommandReader)
+{
+	public inline function new(d:DrawCommandReader)
+	{
+		this = d;
+	}
+
+	public var depthTest(get, never):Bool;
+
+	private inline function get_depthTest():Bool
+	{
+		return this.bool(0);
+	}
+
+	public var compareMode(get, never):Context3DCompareMode;
+
+	private inline function get_compareMode():Context3DCompareMode
+	{
+		return this.obj(0);
 	}
 }

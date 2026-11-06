@@ -155,6 +155,11 @@ class CairoTextField
 			graphics.__visible = true;
 			graphics.__managed = true;
 
+			if (graphics.__bitmap != null)
+			{
+				graphics.__bitmap.dispose();
+			}
+
 			graphics.__bitmap = bitmap;
 
 			cairo = graphics.__cairo;
@@ -386,10 +391,19 @@ class CairoTextField
 
 							if (start != null && end != null)
 							{
-								cairo.setSourceRGB(0, 0, 0);
+								var selectionHighlightColor = textField.selectionHighlightColor;
+								var r = ((selectionHighlightColor & 0xFF0000) >>> 16) / 0xFF;
+								var g = ((selectionHighlightColor & 0x00FF00) >>> 8) / 0xFF;
+								var b = (selectionHighlightColor & 0x0000FF) / 0xFF;
+								cairo.setSourceRGB(r, g, b);
 								cairo.rectangle(scrollX + start.x - bounds.x, start.y + scrollY, end.x - start.x, group.height);
 								cairo.fill();
-								cairo.setSourceRGB(1, 1, 1);
+
+								var selectionTextColor = textField.selectionTextColor;
+								var r = ((selectionTextColor & 0xFF0000) >>> 16) / 0xFF;
+								var g = ((selectionTextColor & 0x00FF00) >>> 8) / 0xFF;
+								var b = (selectionTextColor & 0x0000FF) / 0xFF;
+								cairo.setSourceRGB(r, g, b);
 
 								// TODO: draw only once
 
@@ -443,6 +457,7 @@ class CairoTextField
 						cairo.closePath();
 					}
 
+					#if (openfl >= "9.5.0")
 					if (group.format.strikethrough)
 					{
 						var strikethroughThickness:Float;
@@ -473,6 +488,7 @@ class CairoTextField
 						cairo.stroke();
 						cairo.closePath();
 					}
+					#end
 				}
 			}
 		}

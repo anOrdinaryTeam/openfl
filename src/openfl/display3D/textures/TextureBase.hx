@@ -9,6 +9,7 @@ import lime.utils.ArrayBufferView;
 import lime.utils.Log;
 import openfl.display.OpenGLRenderer;
 import openfl.display.BitmapData;
+import openfl.display.Graphics;
 import openfl.display._internal.SamplerState;
 import openfl.errors.Error;
 import openfl.events.EventDispatcher;
@@ -22,6 +23,7 @@ import openfl.events.EventDispatcher;
 @:access(openfl.display._internal.SamplerState)
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.BitmapData)
+@:access(openfl.display.Graphics)
 @:access(openfl.display.Stage)
 class TextureBase extends EventDispatcher
 {
@@ -39,7 +41,6 @@ class TextureBase extends EventDispatcher
 	@:noCompletion private var __internalFormat:Int;
 @:noCompletion private var __memoryUsage:Int;
 	@:noCompletion private var __optimizeForRenderToTexture:Bool;
-	@:noCompletion private var __premultiplyAlpha:Bool;
 	@:noCompletion private var __samplerState:SamplerState;
 	@:noCompletion private var __streamingLevels:Int;
 	@:noCompletion private var __textureContext:RenderContext;
@@ -51,9 +52,7 @@ class TextureBase extends EventDispatcher
 		super();
 
 		__context = context;
-		var gl = __context.gl;
-
-		__textureID = gl.createTexture();
+		__textureID = context.gl.createTexture();
 		__textureContext = __context.__context;
 
 		// Since `format` has never been taken into account when creating the `TextureBase`, if `format` is null, keep the old behaviour.
@@ -133,6 +132,40 @@ class TextureBase extends EventDispatcher
 		}
 	}
 
+	/**
+		Resizes and stretches this Texture object to desired width and height.
+
+		@param	width		The width of the bitmap image in pixels.
+		@param	height		The height of the bitmap image in pixels.
+
+		@since FunkinCrew's OpenFL
+
+		@see `BitmapData.resize`
+	**/
+	public function resize(width:Int, height:Int):Void
+	{
+		@:privateAccess
+		{
+			if (Graphics.maxTextureWidth != null && width > Graphics.maxTextureWidth) width = Graphics.maxTextureWidth;
+			if (Graphics.maxTextureHeight != null && height > Graphics.maxTextureHeight) height = Graphics.maxTextureHeight;
+		}
+
+		var gl = __context.gl;
+
+		if (gl != null && width > 0 && height > 0 && (__width != width || __height != height))
+		{
+			__width = width;
+			__height = height;
+
+			__context.__bindGLTexture2D(__textureID);
+
+			gl.texImage2D(__textureTarget, 0, __internalFormat, width, height, 0, __format, gl.UNSIGNED_BYTE, null);
+			if (__glFramebuffer != null) __updateGLFramebuffer();
+
+			__context.__bindGLTexture2D(null);
+		}
+	}
+
 	@:noCompletion private function __getGLFramebuffer(enableDepthAndStencil:Bool, antiAlias:Int, surfaceSelector:Int):GLFramebuffer
 	{
 		var gl = __context.gl;
@@ -189,6 +222,34 @@ class TextureBase extends EventDispatcher
 				{
 					Log.warn('Error: Context3D.setRenderToTexture status:${code} width:${__width} height:${__height}');
 				}
+			}
+
+			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+		}
+
+		return __glFramebuffer;
+	}
+
+	@:noCompletion private function __updateGLFramebuffer():GLFramebuffer
+	{
+		if (__glFramebuffer == null) return null;
+
+		var gl = __context.gl;
+
+		__context.__bindGLFramebuffer(__glFramebuffer);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, __textureID, 0);
+
+		if (__glDepthRenderbuffer != null)
+		{
+			var seperate = __glDepthRenderbuffer != __glStencilRenderbuffer;
+
+			gl.bindRenderbuffer(gl.RENDERBUFFER, __glDepthRenderbuffer);
+			gl.renderbufferStorage(gl.RENDERBUFFER, seperate ? gl.DEPTH_COMPONENT16 : Context3D.__glDepthStencil, __width, __height);
+
+			if (seperate)
+			{
+				gl.bindRenderbuffer(gl.RENDERBUFFER, __glStencilRenderbuffer);
+				gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, __width, __height);
 			}
 
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);

@@ -42,6 +42,7 @@ import openfl.text.Font;
 @:access(openfl.utils.AssetLibrary)
 class Assets
 {
+	public static var allowCompressedTextures:Bool = true;
 	public static var allowHardwareTextures:Bool = true;
 
 	public static var cache:IAssetCache = new AssetCache();
@@ -70,13 +71,25 @@ class Assets
 		@param	type	The asset type to match, or null to match any type
 		@return		Whether the requested asset ID and type exists
 	**/
-	public static function exists(id:String, type:AssetType = null):Bool
+	public static function exists(id:String, type:AssetType = null, ?allowCompressedTextures:Null<Bool>):Bool
 	{
-		/*if (id != null && StringTools.endsWith(id, 'png') && type == null || type == IMAGE)
+		if (allowCompressedTextures == null) allowCompressedTextures = Assets.allowCompressedTextures;
+
+		if (allowCompressedTextures)
 		{
-			if (LimeAssets.exists(id.substr(0, id.length - 3) + 'astc', BINARY)) return true;
-			if (LimeAssets.exists(id.substr(0, id.length - 3) + 'dds', BINARY)) return true;
-		}*/
+			if (id != null && haxe.io.Path.extension(id) == "png")
+			{
+				if (LimeAssets.exists(haxe.io.Path.withExtension(id, "astc"), BINARY))
+				{
+					return true;
+				}
+			}
+			else if (id != null && haxe.io.Path.extension(id) == "astc" && type != AssetType.BINARY)
+			{
+				type = AssetType.BINARY;
+			}
+		}
+
 		return LimeAssets.exists(id, cast type);
 	}
 
@@ -107,12 +120,17 @@ class Assets
 
 		@param	id		The ID or asset path for the bitmap
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
+		@param  allowHardwareTextures		(Optional) Whether to immediately push to GPU after getting this bitmap (Default: true)
+		@param  allowCompressedTextures		(Optional) Whether to allow compressed textures to be used to get this bitmap (Default: true)
 		@return		A new BitmapData object
 
 		@see [Working with bitmap assets](https://books.openfl.org/openfl-developers-guide/working-with-bitmaps/working-with-bitmap-assets.html)
 	**/
-	public static function getBitmapData(id:String, useCache:Bool = true):BitmapData
+	public static function getBitmapData(id:String, useCache:Bool = true, ?allowHardwareTextures:Null<Bool>, ?allowCompressedTextures:Null<Bool>):BitmapData
 	{
+		if (allowCompressedTextures == null) allowCompressedTextures = Assets.allowCompressedTextures;
+		if (allowHardwareTextures == null) allowHardwareTextures = Assets.allowHardwareTextures;
+
 		if (useCache && cache.enabled && cache.hasBitmapData(id))
 		{
 			var bitmapData = cache.getBitmapData(id);
@@ -146,11 +164,67 @@ class Assets
 		}
 		#end
 
+		if ((allowCompressedTextures || haxe.io.Path.extension(id) == "astc") && openfl.Lib.current.stage.context3D.isASTCSupported())
+		{
+			final astcTexture:String = haxe.io.Path.withExtension(id, "astc");
+
+			if (LimeAssets.exists(astcTexture, BINARY))
+			{
+				var bitmapData = BitmapData.fromTexture(openfl.Lib.current.stage.context3D.createASTCTexture(LimeAssets.getBytes(astcTexture)), false);
+
+				if (useCache && cache.enabled)
+				{
+					cache.setBitmapData(id, bitmapData);
+				}
+
+				return bitmapData;
+			}
+
+			if (haxe.io.Path.extension(id) == "astc")
+			{
+				return null;
+			}
+		}
+
+		#if (cpp && lime_cffi && !macro && sys)
+		// HTML5 does not like synchronously loads bitmap, and it already caches all of the images initially.
+		// So the methods to get hardware textures with cached bytes will be cpp only.
+		// The reason why this exists so it doesn't have to make gc in under pressure for allocating temporary bytes
+		// just for to make it not readable later.
+		if (allowHardwareTextures)
+		{
+			var bitmapData = BitmapData.fromFile(LimeAssets.getPath(id), true);
+			if (bitmapData == null)
+			{
+				try
+				{
+					bitmapData = BitmapData.fromBytes(LimeAssets.getBytes(id), null, true);
+				}
+				catch (e)
+				{
+					// Causes crash for some reason for casting some weird stuff in lime getBytes AssetLibrary?
+				}
+			}
+
+			if (bitmapData != null)
+			{
+				bitmapData.__asset = true;
+
+				if (useCache && cache.enabled)
+				{
+					cache.setBitmapData(id, bitmapData);
+				}
+
+				return bitmapData;
+			}
+		}
+		#end
+
 		var image = LimeAssets.getImage(id, false);
 
 		if (image != null)
 		{
-			var bitmapData = BitmapData.fromImage(image, true, (allowHardwareTextures && Assets.allowHardwareTextures));
+			var bitmapData = BitmapData.fromImage(image, true, allowHardwareTextures);
 
 			bitmapData.__asset = true;
 
@@ -207,7 +281,6 @@ class Assets
 		if (limeFont != null)
 		{
 			var font = new Font();
-
 			font.__fromLimeFont(limeFont);
 
 			if (useCache && cache.enabled)
@@ -398,7 +471,6 @@ class Assets
 		if (libraryBindings.exists(className))
 		{
 			var library = libraryBindings.get(className);
-
 			if (instance == null)
 			{
 				Sprite.__constructor = function(instance:Sprite)
@@ -487,13 +559,17 @@ class Assets
 
 		@param	id 		The ID or asset path for the asset
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
-		@param	allowHardwareTextures		(Optional) Wether to allow hardware textures to be used (Default: true)
+		@param  allowHardwareTextures		(Optional) Whether to immediately push to GPU after getting this bitmap (Default: true)
+		@param  allowCompressedTextures		(Optional) Whether to allow compressed textures to be used to get this bitmap (Default: true)
 		@return		Returns a Future<BitmapData>
 
 		@see [Working with bitmap assets](https://books.openfl.org/openfl-developers-guide/working-with-bitmaps/working-with-bitmap-assets.html)
 	**/
-	public static function loadBitmapData(id:String, useCache:Null<Bool> = true, allowHardwareTextures:Bool = true):Future<BitmapData>
+	public static function loadBitmapData(id:String, useCache:Null<Bool> = true, ?allowHardwareTextures:Null<Bool>, ?allowCompressedTextures:Null<Bool>):Future<BitmapData>
 	{
+		if (allowCompressedTextures == null) allowCompressedTextures = Assets.allowCompressedTextures;
+		if (allowHardwareTextures == null) allowHardwareTextures = Assets.allowHardwareTextures;
+
 		if (useCache == null) useCache = true;
 
 		var promise = new Promise<BitmapData>();
@@ -544,11 +620,47 @@ class Assets
 		}
 		#end
 
+		if ((allowCompressedTextures || haxe.io.Path.extension(id) == "astc") && openfl.Lib.current.stage.context3D.isASTCSupported())
+		{
+			final astcTexture:String = haxe.io.Path.withExtension(id, "astc");
+
+			if (LimeAssets.exists(astcTexture, BINARY))
+			{
+				LimeAssets.loadBytes(astcTexture).onComplete(function(bytes)
+				{
+					if (bytes != null)
+					{
+						var bitmapData = BitmapData.fromTexture(openfl.Lib.current.stage.context3D.createASTCTexture(bytes), false);
+						bitmapData.__asset = true;
+
+						if (useCache && cache.enabled)
+						{
+							cache.setBitmapData(id, bitmapData);
+						}
+
+						promise.complete(bitmapData);
+					}
+					else
+					{
+						promise.error("[Assets] Could not load Image \"" + id + "\"");
+					}
+				}).onError(promise.error).onProgress(promise.progress);
+
+				return promise.future;
+			}
+
+			if (haxe.io.Path.extension(id) == "astc")
+			{
+				promise.error("[Assets] Could not load Image \"" + id + "\"");
+				return promise.future;
+			}
+		}
+
 		LimeAssets.loadImage(id, false).onComplete(function(image)
 		{
 			if (image != null)
 			{
-				var bitmapData = BitmapData.fromImage(image, true, (allowHardwareTextures && Assets.allowHardwareTextures));
+				var bitmapData = BitmapData.fromImage(image, true, allowHardwareTextures);
 
 				bitmapData.__asset = true;
 
@@ -621,7 +733,6 @@ class Assets
 			.onComplete(function(limeFont)
 			{
 				var font = new Font();
-
 				font.__fromLimeFont(limeFont);
 
 				if (useCache && cache.enabled)
@@ -834,7 +945,9 @@ class Assets
 
 	@:noCompletion private static function resolveEnum(name:String):Enum<Dynamic>
 	{
-		return Type.resolveEnum(name);
+		var value = Type.resolveEnum(name);
+
+		return value;
 	}
 
 	public static function unloadLibrary(name:String):Void

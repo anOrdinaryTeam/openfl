@@ -32,7 +32,7 @@ class SecurityErrorEvent extends ErrorEvent
 		| `target` | The network object reporting the security error. |
 		| `text` | Text to be displayed as an error message. |
 	**/
-	public static inline var SECURITY_ERROR:EventType<SecurityErrorEvent> = "securityError";
+	public static var SECURITY_ERROR(default, never):EventType<SecurityErrorEvent> = "securityError";
 
 	/**
 		Creates an Event object that contains information about security error

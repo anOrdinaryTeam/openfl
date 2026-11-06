@@ -23,6 +23,7 @@ import openfl.ui.MouseCursor;
 
 	The SimpleButton class inherits from the InteractiveObject class.
 **/
+@:access(openfl.display.DisplayObjectContainer)
 @:access(openfl.display.MovieClip)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -423,7 +424,7 @@ class SimpleButton extends InteractiveObject
 
 		if (value != null && value.parent != null)
 		{
-			value.parent.removeChild(value);
+			value.parent.__removeChild(value);
 		}
 
 		if (value != __currentState)

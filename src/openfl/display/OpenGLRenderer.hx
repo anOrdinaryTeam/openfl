@@ -116,6 +116,7 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	@:noCompletion private var __updatedStencil:Bool;
 	@:noCompletion private var __upscaled:Bool;
 	@:noCompletion private var __values:Array<Float>;
+	@:noCompletion private var __graphicsMatrix:Array<Float>;
 	@:noCompletion private var __width:Int;
 
 	@:noCompletion private function new(context:Context3D, defaultRenderTarget:BitmapData = null)
@@ -603,6 +604,23 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__currentGraphicsShader = other.__currentGraphicsShader;
 
 		// __gl.glProgram = other.__gl.glProgram;
+	}
+
+	@:noCompletion private function __getGraphicsMatrix(transform:Matrix):Array<Float>
+	{
+		var source = __getMatrix(transform, NEVER);
+		var target = __graphicsMatrix;
+		if (target == null || target.length != source.length)
+		{
+			target = [];
+			target.resize(source.length);
+			__graphicsMatrix = target;
+		}
+		for (i in 0...source.length)
+		{
+			target[i] = source[i];
+		}
+		return target;
 	}
 
 	@:noCompletion private function __getMatrix(transform:Matrix, pixelSnapping:PixelSnapping):Array<Float>
@@ -1099,13 +1117,10 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__width = width;
 		__height = height;
 
-		var w = (__defaultRenderTarget == null) ? __stage.stageWidth : __defaultRenderTarget.width;
-		var h = (__defaultRenderTarget == null) ? __stage.stageHeight : __defaultRenderTarget.height;
-
-		__offsetX = __defaultRenderTarget == null ? Math.round(__worldTransform.__transformX(0, 0)) : 0;
-		__offsetY = __defaultRenderTarget == null ? Math.round(__worldTransform.__transformY(0, 0)) : 0;
-		__displayWidth = __defaultRenderTarget == null ? Math.round(__worldTransform.__transformX(w, 0) - __offsetX) : w;
-		__displayHeight = __defaultRenderTarget == null ? Math.round(__worldTransform.__transformY(0, h) - __offsetY) : h;
+		__offsetX = 0;
+		__offsetY = 0;
+		__displayWidth = (__defaultRenderTarget == null) ? width : __defaultRenderTarget.width;
+		__displayHeight = (__defaultRenderTarget == null) ? height : __defaultRenderTarget.height;
 
 		__projection.createOrtho(0, __displayWidth + __offsetX * 2, 0, __displayHeight + __offsetY * 2, -1000, 1000);
 		__projectionFlipped.createOrtho(0, __displayWidth + __offsetX * 2, __displayHeight + __offsetY * 2, 0, -1000, 1000);
