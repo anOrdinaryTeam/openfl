@@ -114,6 +114,18 @@ class AssetLibrary extends LimeAssetLibrary
 		}
 	}
 
+	public override function getAudioBufferStream(id:String):AudioBuffer
+	{
+		if (__proxy != null)
+		{
+			return __proxy.getAudioBufferStream(id);
+		}
+		else
+		{
+			return super.getAudioBufferStream(id);
+		}
+	}
+
 	public override function getBytes(id:String):Bytes
 	{
 		if (__proxy != null)
@@ -236,6 +248,18 @@ class AssetLibrary extends LimeAssetLibrary
 		else
 		{
 			return super.loadAudioBuffer(id);
+		}
+	}
+
+	public override function loadAudioBufferStream(id:String):Future<AudioBuffer>
+	{
+		if (__proxy != null)
+		{
+			return __proxy.loadAudioBufferStream(id);
+		}
+		else
+		{
+			return super.loadAudioBufferStream(id);
 		}
 	}
 
