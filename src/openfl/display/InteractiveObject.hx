@@ -1210,6 +1210,26 @@ class InteractiveObject extends DisplayObject
 		__tabIndex = -1;
 	}
 
+	#if !openfl_strict
+	/**
+		Raises a virtual keyboard. On native targets this enables text input on the
+		stage's window, which shows the on-screen keyboard where the platform has one.
+
+		@return	Whether text input could be enabled.
+	**/
+	public function requestSoftKeyboard():Bool
+	{
+		#if lime
+		if (stage != null && stage.window != null)
+		{
+			stage.window.textInputEnabled = true;
+			return true;
+		}
+		#end
+		return false;
+	}
+	#end
+
 	@:noCompletion private function __allowMouseFocus():Bool
 	{
 		return mouseEnabled && tabEnabled;

@@ -201,6 +201,11 @@ class Sound extends EventDispatcher
 	public var length(get, never):Float;
 
 	/**
+		Sample rate of the sound data, in Hz (Codename Engine API).
+	**/
+	public var sampleRate(get, never):Int;
+
+	/**
 		The URL from which this sound was loaded. This property is applicable only
 		to Sound objects that were loaded using the `Sound.load()`
 		method. For Sound objects that are associated with a sound asset from a
@@ -339,6 +344,24 @@ class Sound extends EventDispatcher
 		var sound = fromAudioBuffer(buffer);
 		sound.__metadataPath = path;
 		return sound;
+	}
+
+	/**
+		Loads the first of `paths` that exists (Codename Engine API, for picking between formats).
+
+		@param	paths	Candidate file paths, in order of preference
+		@returns	A Future Sound
+	**/
+	public static function loadFromFiles(paths:Array<String>):Future<Sound>
+	{
+		#if sys
+		for (path in paths)
+			if (path != null && sys.FileSystem.exists(path))
+				return loadFromFile(path);
+		#end
+		if (paths != null && paths.length > 0)
+			return loadFromFile(paths[0]);
+		return cast Future.withError("Cannot load audio files");
 	}
 
 	/**
@@ -718,6 +741,18 @@ class Sound extends EventDispatcher
 		}
 
 		return __id3;
+	}
+
+	@:noCompletion private function get_sampleRate():Int
+	{
+		#if lime
+		if (__buffer == null) return 0;
+		if (__buffer.sampleRate > 0) return __buffer.sampleRate;
+		#if lime_miniaudio
+		if (__buffer.__srcMADecoder != null) return __buffer.__srcMADecoder.get_data_format().sampleRate;
+		#end
+		#end
+		return 0;
 	}
 
 	@:noCompletion private function get_length():Float

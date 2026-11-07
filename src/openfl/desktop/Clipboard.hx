@@ -404,6 +404,18 @@ class Clipboard
 	}
 
 	// Get & Set Methods
+	#if !openfl_strict
+	/**
+		Adds a reference to a handler function that produces the data to be transferred.
+		Not implemented, as in Codename Engine's OpenFL on native targets.
+	**/
+	public function setDataHandler(format:ClipboardFormats, handler:Void->Dynamic, serializable:Bool = true):Bool
+	{
+		openfl.utils._internal.Lib.notImplemented();
+		return false;
+	}
+	#end
+
 	@:noCompletion private function get_formats():Array<ClipboardFormats>
 	{
 		var formats:Array<ClipboardFormats> = [];

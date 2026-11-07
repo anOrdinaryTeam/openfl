@@ -623,6 +623,17 @@ class Loader extends DisplayObjectContainer
 		throw new Error("Error #2069: The Loader class does not implement this method.", 2069);
 	}
 
+	#if !openfl_strict
+	/**
+		Cancels a load() method operation that is currently in progress for the Loader instance.
+		Not implemented, as in Codename Engine's OpenFL on native targets.
+	**/
+	public function close():Void
+	{
+		openfl.utils._internal.Lib.notImplemented();
+	}
+	#end
+
 	/**
 		Removes a child of this Loader object that was loaded by using the
 		`load()` method. The `property` of the associated

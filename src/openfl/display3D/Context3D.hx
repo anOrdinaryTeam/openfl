@@ -975,6 +975,16 @@ import openfl.utils.ByteArray;
 	}
 
 	/**
+		Creates a VideoTexture object. Video textures are not supported on native targets,
+		as in Codename Engine's OpenFL.
+	**/
+	public function createVideoTexture():VideoTexture
+	{
+		throw new Error("Video textures are not supported on this platform");
+		return null;
+	}
+
+	/**
 		Creates a VertexBuffer3D object.
 
 		Use a VertexBuffer3D object to upload a set of vertex data to the rendering

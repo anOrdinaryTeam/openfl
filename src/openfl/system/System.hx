@@ -131,6 +131,25 @@ import cpp.vm.Gc;
 		LimeSystem.exit(code);
 	}
 
+	#if !openfl_strict
+	/**
+		Pauses the application. Not implemented, as in Codename Engine's OpenFL on native targets.
+	**/
+	public static function pause():Void
+	{
+		openfl.utils._internal.Lib.notImplemented();
+	}
+
+	/**
+		Resumes the application after calling `System.pause()`. Not implemented, as in
+		Codename Engine's OpenFL on native targets.
+	**/
+	public static function resume():Void
+	{
+		openfl.utils._internal.Lib.notImplemented();
+	}
+	#end
+
 	/**
 		Forces the garbage collection process.
 
