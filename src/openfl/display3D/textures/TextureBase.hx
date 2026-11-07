@@ -41,6 +41,7 @@ class TextureBase extends EventDispatcher
 	@:noCompletion private var __internalFormat:Int;
 @:noCompletion private var __memoryUsage:Int;
 	@:noCompletion private var __optimizeForRenderToTexture:Bool;
+	@:noCompletion private var __premultiplyAlpha:Bool;
 	@:noCompletion private var __samplerState:SamplerState;
 	@:noCompletion private var __streamingLevels:Int;
 	@:noCompletion private var __textureContext:RenderContext;
@@ -52,7 +53,9 @@ class TextureBase extends EventDispatcher
 		super();
 
 		__context = context;
-		__textureID = context.gl.createTexture();
+		var gl = __context.gl;
+
+		__textureID = gl.createTexture();
 		__textureContext = __context.__context;
 
 		// Since `format` has never been taken into account when creating the `TextureBase`, if `format` is null, keep the old behaviour.
