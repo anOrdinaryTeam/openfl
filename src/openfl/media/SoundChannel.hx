@@ -132,19 +132,6 @@ import openfl.events.EventDispatcher;
 		__audioSource.play();
 	}
 
-	#if lime_funkin
-	@:noCompletion private function __updatePeaks():Void
-	{
-		var position = __audioSource.currentTime;
-		if (Math.abs(__lastPeakPosition - position) < 8) return;
-		__lastPeakPosition = position;
-
-		var peaks = __audioSource.peaks;
-		__leftPeak = peaks[0];
-		__rightPeak = peaks[1];
-	}
-	#end
-
 	// Get & Set Methods
 	@:noCompletion private function get_leftPeak():Float
 	{
@@ -170,18 +157,6 @@ import openfl.events.EventDispatcher;
 		__audioSource.currentTime = value;
 
 		return value;
-	}
-
-	@:noCompletion private function get_rightPeak():Float
-	{
-		if (!__isValid) return 0;
-
-		#if lime_funkin
-		__updatePeaks();
-		return __rightPeak;
-		#else
-		return 0;
-		#end
 	}
 
 	@:noCompletion private function get_soundTransform():SoundTransform
